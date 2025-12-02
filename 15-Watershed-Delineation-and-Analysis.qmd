@@ -80,7 +80,7 @@ First we will read in the raster, set its CRS (not always needed), set values be
 
 ```{r}
 
-tmap_mode("view")
+tmap_mode("plot")
 dem <- rast("McDonaldHollowDEM/brushDEMsm_5m.tif")
 crs(dem) <- '+init=EPSG:4326'
 writeRaster(dem, "McDonaldHollowDEM/brushDEMsm_5m_crs.tif", overwrite = TRUE)
