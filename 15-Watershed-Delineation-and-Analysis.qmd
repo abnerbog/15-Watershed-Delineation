@@ -1,8 +1,24 @@
 ---
-title: "15 - Watershed Delineation"
+title: "Chapter 15: Watershed Delineation"
+date: today
+github: https://github.com/VT-Hydroinformatics/15-Watershed-Delineation
+author:
+  - name: JP Gannon
+    orcid: 0000-0002-4595-3214
+    github: jpgannon
+    url: https://jpgannon.github.io/
+    affiliation: 
+      - name: Virginia Tech
+        url: https://www.vt.edu/
 format:
   html: 
     self-contained: true
+  ipynb:
+      nb-frontmatter: true
+jupyter: 
+  kernel: ir
+execute: 
+  enabled: true
 ---
 
 # Geospatial R Raster - Watershed Delineation {#rgeowatersheds}
@@ -79,32 +95,19 @@ The first several steps are review from the previous activity.
 First we will read in the raster, set its CRS (not always needed), set values below 1500 to NA since they are artefacts around the edges, and plot the DEM to be sure everything went ok.
 
 ```{r}
+tmap_mode("view")
 
-tmap_mode("plot")
 dem <- rast("McDonaldHollowDEM/brushDEMsm_5m.tif")
+
 crs(dem) <- '+init=EPSG:4326'
+
 writeRaster(dem, "McDonaldHollowDEM/brushDEMsm_5m_crs.tif", overwrite = TRUE)
+
 dem[dem < 1500] <- NA
 
-tm_shape(dem) +
-  tm_raster(legend.show = TRUE) +
-  tm_scale_continuous(values = "brewer.pu_or") +
-  tm_scalebar()
-
-
-# tmap_mode("view")
-# 
-# dem <- rast("McDonaldHollowDEM/brushDEMsm_5m.tif")
-# 
-# crs(dem) <- '+init=EPSG:4326'
-# 
-# writeRaster(dem, "McDonaldHollowDEM/brushDEMsm_5m_crs.tif", overwrite = TRUE)
-# 
-# dem[dem < 1500] <- NA
-# 
-# tm_shape(dem)+
-#   tm_raster(style = "cont", palette = "PuOr", legend.show = TRUE)+
-#   tm_scale_bar()
+tm_shape(dem)+
+  tm_raster(style = "cont", palette = "PuOr", legend.show = TRUE)+
+  tm_scale_bar()
 ```
 
 ## Generate a hillshade
