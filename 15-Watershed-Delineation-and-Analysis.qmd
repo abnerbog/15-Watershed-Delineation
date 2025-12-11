@@ -49,12 +49,19 @@ library(tmap)
 library(stars)
 library(rayshader)
 library(rgl)
+library(htmlwidgets)
+library(mapview)
 
 whitebox::wbt_init()
 
 knitr::knit_hooks$set(webgl = hook_webgl)
 
 theme_set(theme_classic())
+
+# add images folder if it doesn't exist
+if (!dir.exists("images")) {
+  dir.create("images")
+}
 ```
 
 ## The watershed delineation tool/process
@@ -95,6 +102,10 @@ The first several steps are review from the previous activity.
 First we will read in the raster, set its CRS (not always needed), set values below 1500 to NA since they are artefacts around the edges, and plot the DEM to be sure everything went ok.
 
 ```{r}
+# define where to save static and interactive maps
+dem_plot_interactive_fp <- "./images/dem-plot.html"
+dem_plot_static_fp <- "./images/dem-plot.png"
+
 tmap_mode("view")
 
 dem <- rast("McDonaldHollowDEM/brushDEMsm_5m.tif")
@@ -105,26 +116,49 @@ writeRaster(dem, "McDonaldHollowDEM/brushDEMsm_5m_crs.tif", overwrite = TRUE)
 
 dem[dem < 1500] <- NA
 
-tm_shape(dem)+
+dem_plot <- tm_shape(dem)+
   tm_raster(style = "cont", palette = "PuOr", legend.show = TRUE)+
   tm_scale_bar()
+
+dem_plot |> tmap_save(filename=dem_plot_interactive_fp)
+dem_plot |> tmap_save(filename=dem_plot_static_fp)
 ```
+
+::: {#fig-dem-plot .captioned-figure}
+<img src="./images/dem-plot.png" alt="DEM plot" width="1000">
+
+Screenshot of DEM plot. View the **[interactive map here](./images/dem-plot.html)**. 
+:::
+
 
 ## Generate a hillshade
 
 Next, we will generate a hillshade to aid in visualization and then plot it to be sure it turned out ok.
 
 ```{r}
+# define where to save static and interactive maps
+hillshade_plot_interactive_fp <- "./images/hillshade-plot.html"
+hillshade_plot_static_fp <- "./images/hillshade-plot.png"
+
 wbt_hillshade(dem = "McDonaldHollowDEM/brushDEMsm_5m_crs.tif",
               output = "McDonaldHollowDEM/brush_hillshade.tif",
               azimuth = 115)
 
 hillshade <- rast("McDonaldHollowDEM/brush_hillshade.tif")
 
-tm_shape(hillshade)+
+hillshade_plot <- tm_shape(hillshade)+
   tm_raster(style = "cont",palette = "-Greys", legend.show = FALSE)+
   tm_scale_bar()
+
+hillshade_plot |> tmap_save(filename=hillshade_plot_interactive_fp)
+hillshade_plot |> tmap_save(filename=hillshade_plot_static_fp)
 ```
+
+::: {#fig-hillshade-plot .captioned-figure}
+<img src="./images/hillshade-plot.png" alt="Hillshade plot" width="1000">
+
+Screenshot of hillshade plot. View the **[interactive map here](./images/hillshade-plot.html)**. 
+:::
 
 ## Prepare DEM for Hydrology Analyses
 
@@ -202,6 +236,10 @@ The parameter snap_dist tells the function what distance in which to look for a 
 After you get the streams and snapped pour points, read them into your R environment and plot them to be sure the pour points are on the streams.
 
 ```{r}
+# define where to save static and interactive maps
+pour_points_plot_interactive_fp <- "./images/pour_points_plot.html"
+pour_points_plot_static_fp <- "./images/pour_points_plot.png"
+
 wbt_extract_streams(flow_accum = "McDonaldHollowDEM/D8FA.tif",
                     output = "McDonaldHollowDEM/raster_streams.tif",
                     threshold = 6000)
@@ -214,11 +252,20 @@ wbt_jenson_snap_pour_points(pour_pts = "McDonaldHollowDEM/pourpoints.shp",
 pp <- read_sf("McDonaldHollowDEM/snappedpp.shp")
 streams <- rast("McDonaldHollowDEM/raster_streams.tif")
 
-tm_shape(streams)+
+pour_points_plot <- tm_shape(streams)+
   tm_raster(legend.show = TRUE, palette = "Blues")+
 tm_shape(pp)+
   tm_dots(col = "red")
+
+pour_points_plot |> tmap_save(filename=pour_points_plot_interactive_fp)
+pour_points_plot |> tmap_save(filename=pour_points_plot_static_fp)
 ```
+
+::: {#fig-pour-points-plot .captioned-figure}
+<img src="./images/pour_points_plot.png" alt="Hillshade plot" width="1000">
+
+Screenshot of pour points plot. View the **[interactive map here](./images/pour_points_plot.html)**. 
+:::
 
 ## Delineate watersheds
 
@@ -229,19 +276,32 @@ Use wbt_watershed(), which takes as input a D8 pointer file (d8_pntr) and our sn
 Read the results of this function back in and plot them over the hillshade with alpha set to 0.5 to see what it did.
 
 ```{r}
+# define where to save static and interactive maps
+watershed_plot_interactive_fp <- "./images/watershed_plot.html"
+watershed_plot_static_fp <- "./images/watershed_plot.png"
+
 wbt_watershed(d8_pntr = "McDonaldHollowDEM/D8pointer.tif",
               pour_pts = "McDonaldHollowDEM/snappedpp.shp",
               output = "McDonaldHollowDEM/brush_watersheds.tif")
 
 ws <- rast("McDonaldHollowDEM/brush_watersheds.tif")
 
-tm_shape(hillshade)+
+watershed_plot <- tm_shape(hillshade)+
   tm_raster(style = "cont",palette = "-Greys", legend.show = FALSE)+
 tm_shape(ws)+
   tm_raster(legend.show = TRUE, alpha = 0.5, style = "cat")+
 tm_shape(pp)+
   tm_dots(col = "red")
+
+watershed_plot |> tmap_save(filename=watershed_plot_interactive_fp)
+watershed_plot |> tmap_save(filename=watershed_plot_static_fp)
 ```
+
+::: {#fig-watershed-plot .captioned-figure}
+<img src="./images/watershed_plot.png" alt="Watershed plot" width="1000">
+
+Screenshot of watershed plot. View the **[interactive map here](./images/watershed_plot.html)**. 
+:::
 
 ## Convert watersheds to shapefiles
 
@@ -250,15 +310,28 @@ For mapping or vector analysis it can be very useful to have your watersheds as 
 Now we can plot the vector versions of our watersheds, and also use filter() to just show one at a time, or some combination, rather than all three.
 
 ```{r}
+# define where to save static and interactive maps
+watershed_shp_plot_interactive_fp <- "./images/watershed_shp_plot.html"
+watershed_shp_plot_static_fp <- "./images/watershed_shp_plot.png"
+
 wsshape <- st_as_stars(ws) %>% st_as_sf(merge = T)
 
 ws1shp <- wsshape %>% filter(brush_watersheds.tif == "1")
 
-tm_shape(hillshade)+
+watershed_shp_plot <- tm_shape(hillshade)+
   tm_raster(style = "cont",palette = "-Greys", legend.show = FALSE)+
 tm_shape(ws1shp)+
   tm_borders(col = "red")
+
+watershed_shp_plot |> tmap_save(filename=watershed_shp_plot_interactive_fp)
+watershed_shp_plot |> tmap_save(filename=watershed_shp_plot_static_fp)
 ```
+
+::: {#fig-watershed-shp-plot .captioned-figure}
+<img src="./images/watershed_shp_plot.png" alt="Watershed shapefile plot" width="1000">
+
+Screenshot of watershed shapefile plot. View the **[interactive map here](./images/watershed_shp_plot.html)**. 
+:::
 
 ## Extract data based on watershed outline
 
@@ -286,6 +359,9 @@ ggplot() +
 The following code is here just because it is cool. We clip the DEM to the watershed we want, convert it to a matrix, create a hillshade using rayshader (a visualization tool for 3d stuff), and then plot the output.
 
 ```{r}
+watershed_3d_plot_interactive_fp <- "./images/watershed_3d_plot.html"
+watershed_3d_plot_static_fp <- "./images/watershed_3d_plot.png"
+
 ws1_bound <- filter(wsshape, brush_watersheds.tif == "1")
 
 #crop
@@ -309,6 +385,14 @@ wsmat %>%
           windowsize = c(750,750))
 
 #render as html
-rglwidget()
+rgl_plot <- rglwidget() 
 
+rgl_plot |> htmlwidgets::saveWidget(watershed_3d_plot_interactive_fp)
+rgl::snapshot3d(filename = watershed_3d_plot_static_fp, scene = rgl_plot)
 ```
+
+::: {#fig-watershed-3d-plot .captioned-figure}
+<img src="./images/watershed_3d_plot.png" alt="Watershed 3d plot" width="1000">
+
+Screenshot of 3D watershed plot. View the **[interactive map here](./images/watershed_3d_plot.html)**. 
+:::
