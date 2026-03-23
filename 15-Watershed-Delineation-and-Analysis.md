@@ -1,6 +1,11 @@
-# Chapter 15: Watershed Delineation
-JP Gannon
-2026-02-12
+---
+title: 'Chapter 15: Watershed Delineation'
+date: 2026-03-23T00:00:00.000Z
+authors:
+  - id: jpgannon
+github: https://github.com/VT-Hydroinformatics/15-Watershed-Delineation
+---
+
 
 # Geospatial R Raster - Watershed Delineation
 
